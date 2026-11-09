@@ -1,0 +1,24 @@
+/* Variáveis, reset básico e tipografia compartilhada. */
+:root {
+  --red: #a92720;
+  --dark: #7d1d19;
+  --yellow: #f2bd3d;
+  --cream: #fffaf0;
+  --paper: #fff;
+  --ink: #29231f;
+  --muted: #6d625a;
+  --line: #e8ddd0;
+  --shadow: 0 8px 26px rgba(67, 39, 20, .08);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #f8f2e8; color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+input, select, textarea { width: 100%; color: var(--ink); background: #fff; border: 1px solid #cfc2b5; border-radius: 8px; padding: 10px 11px; min-height: 43px; }
+textarea { min-height: 86px; resize: vertical; }
+label { display: block; font-weight: 650; font-size: .9rem; margin-bottom: 5px; }
+h1 { font-size: 1.22rem; line-height: 1.2; margin: 0; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.field-error { color: #b42318; font-size: .82rem; min-height: 1.15em; display: block; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #e8a91f; outline-offset: 2px; }

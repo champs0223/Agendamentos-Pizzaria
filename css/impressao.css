@@ -1,0 +1,12 @@
+/* Estilos exclusivos da comanda impressa. */
+#print-root { display: none; }
+@media print {
+  body * { visibility: hidden !important; }
+  #print-root, #print-root * { visibility: visible !important; }
+  #print-root { display: block !important; position: absolute; inset: 0; width: 100%; padding: 10mm; color: #111; background: #fff; font: 12pt/1.45 Arial, sans-serif; }
+  #print-root h1 { font-size: 18pt; margin-bottom: 4mm; }
+  #print-root h2 { font-size: 14pt; margin: 6mm 0 2mm; }
+  #print-root p { margin: 2mm 0; }
+  #print-root table { margin-top: 4mm; }
+  #print-root th, #print-root td { border: 1px solid #777; }
+}

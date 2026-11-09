@@ -1,0 +1,49 @@
+/* Botões, cartões, formulários, tabelas, diálogos e estados visuais. */
+.primary, .secondary, .danger, .small-btn { border: 0; border-radius: 9px; font-weight: 700; min-height: 42px; padding: 9px 14px; }
+.primary { color: #fff; background: var(--red); }
+.primary:hover { background: var(--dark); }
+.secondary { color: var(--dark); background: #f7e8d1; }
+.danger { color: #8c241d; background: #fce8e4; }
+.small-btn { min-height: 36px; padding: 7px 10px; font-size: .9rem; }
+.metric, .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow); }
+.metric { padding: 14px 18px; }
+.metric strong { display: block; font-size: 1.45rem; color: var(--red); }
+.metric span { color: var(--muted); font-size: .9rem; }
+.panel { margin-bottom: 18px; padding: 18px; }
+.panel-title h2, .panel-title h3 { margin: 0; font-size: 1.12rem; }
+.appointment { border: 1px solid var(--line); border-left: 5px solid #d5c7b9; border-radius: 12px; background: #fff; padding: 16px; }
+.appointment.today { border-left-color: var(--yellow); background: #fffdf6; }
+.appointment.late { border-left-color: var(--red); background: #fff7f5; }
+.card-head h3 { margin: 0 0 4px; font-size: 1.12rem; }
+.card-date { color: var(--muted); font-weight: 650; }
+.badge { display: inline-flex; border-radius: 999px; padding: 4px 10px; font-size: .82rem; font-weight: 750; white-space: nowrap; }
+.status-agendado { color: #745210; background: #fff0c4; }
+.status-em-preparo { color: #185b84; background: #dceffa; }
+.status-saiu-para-entrega { color: #55358a; background: #eee5fb; }
+.status-entregue { color: #1d603d; background: #dff3e7; }
+.status-cancelado { color: #772f2b; background: #f6e2df; }
+.card-grid p { margin: 0 0 6px; }
+.card-actions select { width: auto; min-width: 160px; min-height: 38px; padding: 6px 9px; }
+.card-actions a { text-decoration: none; }
+.empty { text-align: center; color: var(--muted); padding: 30px 12px; border: 1px dashed #cdbdad; border-radius: 12px; }
+.summary-content h3 { margin: 0 0 8px; font-size: 1rem; }
+.summary-content li { margin: 4px 0; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 9px; text-align: left; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: .88rem; }
+.unavailable { opacity: .6; }
+dialog { border: 0; border-radius: 16px; box-shadow: 0 20px 70px rgba(0,0,0,.28); width: min(850px, calc(100% - 24px)); max-height: 92vh; padding: 0; }
+dialog::backdrop { background: rgba(35,25,20,.55); }
+.dialog-head h2 { margin: 0; font-size: 1.2rem; }
+.close-btn { border: 0; background: transparent; font-size: 1.6rem; color: var(--muted); width: 40px; height: 40px; }
+.form-section { border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 16px; }
+.form-section h3 { margin: 0 0 12px; font-size: 1rem; color: var(--dark); }
+.pizza-row label { font-size: .78rem; }
+.remove-pizza { min-height: 43px; }
+.money-output { min-height: 43px; padding: 10px 11px; background: #f5f0e9; border-radius: 8px; border: 1px solid var(--line); font-weight: 750; }
+.notice { border-radius: 9px; padding: 10px 12px; margin-bottom: 12px; background: #fff2ce; color: #67470a; }
+.spaced-row { margin-top: 10px; }
+.notes-field { margin-top: 12px; }
+.checkbox-label { display: flex; align-items: center; gap: 7px; }
+.checkbox-label input { width: auto; min-height: 0; margin: 0; }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5; max-width: min(600px, calc(100% - 24px)); padding: 12px 18px; border-radius: 10px; background: #29231f; color: #fff; box-shadow: var(--shadow); }
