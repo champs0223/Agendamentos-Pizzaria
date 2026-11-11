@@ -9,7 +9,7 @@
     App.UI.init();
     App.Utils.$("#summary-date").value = App.Utils.displayDate(App.Utils.todayISO());
     App.UI.renderMenu();
-    App.UI.addPizzaRow();
+    App.UI.renderPizzaMenu();
     App.UI.renderAll();
   };
 

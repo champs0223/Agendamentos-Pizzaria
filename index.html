@@ -4,51 +4,82 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#a92720">
-  <title>Forno &amp; Festa | Agendamentos de buffet</title>
+  <title>Forno &amp; Festa | Pedidos e buffets</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/componentes.css">
   <link rel="stylesheet" href="css/impressao.css" media="print">
 </head>
 <body>
-  <header class="topbar"><div class="brand"><div class="brand-icon" aria-hidden="true">🍕</div><div><h1>Forno &amp; Festa</h1><small>Agendamentos de buffet de pizza</small></div></div>
-    <div class="top-actions"><button class="small-btn" id="export-json" type="button">Exportar JSON</button><button class="small-btn" id="import-json" type="button">Importar JSON</button><button class="small-btn" id="export-csv" type="button">Exportar CSV</button><input id="import-file" class="hidden" type="file" accept=".json,application/json"></div>
-  </header>
+  <header class="topbar"><div class="brand"><div class="brand-icon" aria-hidden="true">🍕</div><div><h1>Forno &amp; Festa</h1><small>Entregas e buffets de pizza</small></div></div></header>
   <main>
-    <nav class="tabs" aria-label="Seções"><button class="tab active" data-tab="agenda" type="button">Agenda</button><button class="tab" data-tab="menu" type="button">Cardápio</button></nav>
-    <section id="agenda-view">
-      <section class="toolbar"><h2>Agenda da pizzaria</h2><button class="primary" id="new-appointment" type="button">＋ Novo agendamento</button></section>
-      <section class="overview" aria-label="Resumo da agenda"><div class="metric"><strong id="metric-today">0</strong><span>Entregas para hoje</span></div><div class="metric"><strong id="metric-upcoming">0</strong><span>Próximos agendamentos</span></div><div class="metric"><strong id="metric-balance">R$ 0,00</strong><span>Valores restantes em aberto</span></div></section>
-      <section class="panel"><div class="panel-title"><h2>Buscar e filtrar</h2></div>
-        <div class="filters"><div class="search"><label for="search">Cliente ou telefone</label><input id="search" type="search" placeholder="Digite para buscar"></div>
-          <div><label for="date-filter">Período</label><select id="date-filter"><option value="all">Todas as datas</option><option value="today">Hoje</option><option value="tomorrow">Amanhã</option><option value="week">Esta semana</option><option value="custom">Intervalo personalizado</option></select></div>
-          <div><label for="status-filter">Status</label><select id="status-filter"><option value="all">Todos</option><option>Agendado</option><option>Em preparo</option><option>Saiu para entrega</option><option>Entregue</option><option>Cancelado</option></select></div>
+    <div class="page-actions"><button class="primary" id="new-appointment" type="button">＋ Novo pedido</button></div>
+    <nav class="tabs" aria-label="Seções">
+      <button class="tab active" data-tab="kitchen" type="button">Cozinha</button>
+      <button class="tab" data-tab="orders" type="button">Todos os pedidos</button>
+      <button class="tab" data-tab="menu" type="button">Cardápio</button>
+    </nav>
+    <section id="kitchen-view">
+      <section class="panel kitchen-totals">
+        <details id="production-details" open>
+          <summary class="production-summary"><span>Total a produzir hoje</span><span class="muted" id="production-count">0 pizzas</span></summary>
+          <div class="production-content"><div id="production-flavors" class="production-flavors"></div>
+            <section class="overview" aria-label="Resumo da agenda"><div class="metric"><strong id="metric-today">0</strong><span>Entregas para hoje</span></div><div class="metric"><strong id="metric-upcoming">0</strong><span>Próximos agendamentos</span></div><div class="metric"><strong id="metric-balance">R$ 0,00</strong><span>Valores restantes em aberto</span></div></section>
+          </div>
+        </details>
+      </section>
+      <div class="kitchen-panels">
+        <section class="panel kitchen-panel"><div class="panel-title"><h2>Pedidos do dia</h2><span class="muted" id="today-orders-count"></span></div><div id="today-orders" class="kitchen-list"></div></section>
+        <section class="panel kitchen-panel"><div class="panel-title"><h2>Buffets de hoje</h2><span class="muted" id="today-buffets-count"></span></div><div id="today-buffets" class="kitchen-list"></div>
+          <details class="upcoming-section"><summary>Próximos buffets</summary><div id="upcoming-buffets" class="kitchen-list"></div></details>
+        </section>
+      </div>
+      <section class="panel"><div class="panel-title"><h2>Resumo do dia</h2><div class="summary-controls"><div><label for="summary-date">Data do resumo (dd/mm/aaaa)</label><input id="summary-date" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"></div><div><label for="summary-type">Pedidos</label><select id="summary-type"><option value="all">Todos</option><option value="buffet">Só buffets</option><option value="presencial">Só pedidos do dia</option></select></div></div></div><div id="summary-content" class="summary-content"></div></section>
+    </section>
+    <section id="all-orders-view" class="hidden">
+      <section class="panel"><div class="panel-title"><h2>Buscar e filtrar pedidos</h2><span class="muted" id="result-count"></span></div>
+        <div class="filters order-filters"><div class="search"><label for="search">Nome, telefone ou número da comanda</label><input id="search" type="search" placeholder="Digite para buscar"></div>
+          <div><label for="type-filter">Tipo</label><select id="type-filter"><option value="all">Todos</option><option value="presencial">Pedido do dia</option><option value="buffet">Buffet</option></select></div>
+          <div><label for="status-filter">Status</label><select id="status-filter"><option value="all">Todos</option><option>Agendado</option><option>Recebido</option><option>Em preparo</option><option>Saiu para entrega</option><option>Entregue</option><option>Cancelado</option></select></div>
+          <div><label for="date-filter">Data</label><select id="date-filter"><option value="all">Todas as datas</option><option value="today">Hoje</option><option value="tomorrow">Amanhã</option><option value="week">Esta semana</option><option value="custom">Intervalo</option></select></div>
+          <div><label for="sort-orders">Ordenação</label><select id="sort-orders"><option value="recent">Mais recentes primeiro</option><option value="delivery">Data/horário da entrega</option></select></div>
           <div id="custom-range" class="date-range hidden"><div><label for="date-from">De (dd/mm/aaaa)</label><input id="date-from" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"></div><div><label for="date-to">Até (dd/mm/aaaa)</label><input id="date-to" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"></div></div>
         </div>
       </section>
-      <section class="panel"><div class="panel-title"><h2>Agendamentos</h2><span class="muted" id="result-count"></span></div><div id="appointment-list" class="appointment-list"></div></section>
-      <section class="panel"><div class="panel-title"><h2>Resumo do dia</h2><div class="summary-controls"><div><label for="summary-date">Data do resumo (dd/mm/aaaa)</label><input id="summary-date" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"></div></div></div><div id="summary-content" class="summary-content"></div></section>
+      <section class="panel"><div class="panel-title"><h2>Todos os pedidos</h2></div><div id="appointment-list" class="appointment-list"></div></section>
     </section>
     <section id="menu-view" class="hidden">
       <section class="toolbar"><div><h2>Cardápio</h2><p class="muted">Gerencie sabores, categorias, preços e disponibilidade.</p></div><div><button class="secondary" id="restore-menu" type="button">Restaurar cardápio inicial</button> <button class="primary" id="new-flavor" type="button">＋ Adicionar sabor</button></div></section>
       <section class="panel"><div class="table-wrap"><table><thead><tr><th>Categoria</th><th>Sabor</th><th>Broto</th><th>Média</th><th>Grande</th><th>Disponibilidade</th><th>Ações</th></tr></thead><tbody id="menu-list"></tbody></table></div><div id="menu-empty" class="empty hidden">Nenhum sabor cadastrado.</div></section>
     </section>
   </main>
-  <dialog id="appointment-dialog"><div class="dialog-head"><h2 id="form-title">Novo agendamento</h2><button class="close-btn" type="button" data-close="appointment-dialog" aria-label="Fechar">×</button></div>
+  <div id="undo-notice" class="undo-notice hidden" role="status"><span>Pedido marcado como entregue.</span><button type="button" class="secondary small-btn" id="undo-delivery">Desfazer</button></div>
+  <dialog id="appointment-dialog"><div class="dialog-head"><h2 id="form-title">Novo pedido</h2><button class="close-btn" type="button" data-close="appointment-dialog" aria-label="Fechar">×</button></div>
     <form id="appointment-form" class="form-body" novalidate><div id="form-alert" class="notice hidden" role="alert"></div>
+      <section class="form-section type-choice-section"><h3>Tipo do pedido</h3><input id="order-type" type="hidden" value="presencial"><div class="type-choice" role="group" aria-label="Tipo do pedido"><button type="button" class="type-choice-button" data-order-type="presencial" aria-pressed="true">Pedido do dia</button><button type="button" class="type-choice-button" data-order-type="buffet" aria-pressed="false">Buffet agendado</button></div></section>
       <section class="form-section"><h3>Dados do cliente</h3><div class="form-grid">
+        <div class="presential-only"><label>Número da comanda</label><div id="order-number-display" class="money-output order-number-display"></div></div>
         <div><label for="customer-name">Nome de quem pediu *</label><input id="customer-name" maxlength="120"><span class="field-error" id="error-name"></span></div><div><label for="customer-phone">Telefone / WhatsApp *</label><input id="customer-phone" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="(11) 99999-9999"><span class="field-error" id="error-phone"></span></div>
-        <div class="date-time-row"><div><label for="delivery-date">Data da entrega *</label><input id="delivery-date" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"><span class="field-error" id="error-date"></span></div><div><label for="delivery-time">Horário (24h) *</label><input id="delivery-time" inputmode="numeric" placeholder="HH:MM" maxlength="5"><span class="field-error" id="error-time"></span></div></div>
-        <div><label for="people">Quantidade de pessoas</label><input id="people" type="number" min="1" step="1" inputmode="numeric"></div><div><label for="status">Status</label><select id="status"><option>Agendado</option><option>Em preparo</option><option>Saiu para entrega</option><option>Entregue</option><option>Cancelado</option></select></div>
+        <div class="date-time-row buffet-only hidden"><div><label for="delivery-date">Data da entrega *</label><input id="delivery-date" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"><span class="field-error" id="error-date"></span></div><div><label for="delivery-time">Horário (24h) *</label><input id="delivery-time" inputmode="numeric" placeholder="HH:MM" maxlength="5"><span class="field-error" id="error-time"></span></div></div>
+        <div class="buffet-only hidden"><label for="people">Quantidade de pessoas</label><input id="people" type="number" min="1" step="1" inputmode="numeric"></div><div><label for="status">Status</label><select id="status"></select></div>
+        <div><label for="payment-form">Forma de pagamento</label><select id="payment-form"><option>Dinheiro</option><option>Pix</option><option>Cartão</option><option>Pendente</option></select></div>
+        <div class="presential-only"><label for="eta-minutes">Previsão de entrega (minutos)</label><input id="eta-minutes" type="number" min="1" step="1" inputmode="numeric" placeholder="Opcional"></div>
       </div></section>
-      <section class="form-section"><h3>Endereço de entrega</h3><div class="form-grid"><div class="wide"><label for="street">Rua / avenida</label><input id="street" maxlength="150"></div><div><label for="number">Número</label><input id="number" maxlength="20"></div><div><label for="neighborhood">Bairro</label><input id="neighborhood" maxlength="100"></div><div><label for="complement">Complemento</label><input id="complement" maxlength="100"></div><div><label for="reference">Ponto de referência</label><input id="reference" maxlength="150"></div></div></section>
-      <section class="form-section"><div class="panel-title"><h3>Pizzas *</h3><button class="secondary small-btn" type="button" id="add-pizza">＋ Adicionar pizza</button></div><div id="pizza-items"></div><span class="field-error" id="error-pizzas"></span></section>
+      <section class="form-section"><h3>Endereço de entrega</h3><div class="form-grid"><div class="wide"><label for="street">Rua / avenida *</label><input id="street" maxlength="150"></div><div><label for="number">Número *</label><input id="number" maxlength="20"></div><div><label for="neighborhood">Bairro *</label><input id="neighborhood" maxlength="100"></div><div><label for="complement">Complemento</label><input id="complement" maxlength="100"></div><div><label for="reference">Ponto de referência</label><input id="reference" maxlength="150"></div><span class="field-error wide" id="error-address"></span></div></section>
+      <section class="form-section"><div class="panel-title"><h3>Pizzas *</h3></div>
+        <div class="menu-search"><label for="pizza-search">Buscar sabor</label><input id="pizza-search" type="search" placeholder="Digite o nome ou categoria do sabor"></div>
+        <div class="order-menu-wrap"><table class="order-menu"><thead><tr><th>Sabor</th><th>Broto</th><th>Média</th><th>Grande</th></tr></thead><tbody id="pizza-menu-list"></tbody></table></div>
+        <div id="custom-pizza-list"></div><button class="secondary small-btn" type="button" id="add-custom-pizza">＋ Outro sabor (personalizado)</button>
+        <span class="field-error" id="error-pizzas"></span>
+        <h4>Itens do pedido</h4><div id="selected-items" class="selected-items"></div>
+      </section>
       <section class="form-section"><h3>Valores e observações</h3>
         <div class="money-row"><div><label for="delivery-fee">Taxa de entrega (R$)</label><input id="delivery-fee" type="number" min="0" step="0.01" value="0"></div><div><label for="discount">Desconto</label><input id="discount" type="number" min="0" step="0.01" value="0"></div><div><label for="discount-type">Tipo do desconto</label><select id="discount-type"><option value="amount">Valor (R$)</option><option value="percent">Percentual (%)</option></select></div></div>
-        <div class="money-row spaced-row"><div><label>Subtotal das pizzas</label><div class="money-output" id="subtotal-preview">R$ 0,00</div></div><div><label for="deposit">Sinal pago (R$)</label><input id="deposit" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div><div><label>Total do pedido</label><div class="money-output" id="total-preview">R$ 0,00</div></div></div>
-        <div class="money-row spaced-row"><div><label>Desconto calculado</label><div class="money-output" id="discount-preview">R$ 0,00</div></div><div><label>Valor restante</label><div class="money-output" id="remaining-preview">R$ 0,00</div></div></div>
+        <div class="money-row spaced-row"><div><label>Subtotal das pizzas</label><div class="money-output" id="subtotal-preview">R$ 0,00</div></div><div class="buffet-only hidden"><label for="deposit">Sinal pago (R$)</label><input id="deposit" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div><div><label>Total do pedido</label><div class="money-output" id="total-preview">R$ 0,00</div></div></div>
+        <div class="money-row spaced-row"><div><label>Desconto calculado</label><div class="money-output" id="discount-preview">R$ 0,00</div></div><div class="buffet-only hidden"><label>Valor restante</label><div class="money-output" id="remaining-preview">R$ 0,00</div></div></div>
         <div class="notes-field"><label for="notes">Observações</label><textarea id="notes" maxlength="1000" placeholder="Ex.: sem cebola, alergias, instruções de portaria"></textarea></div>
-      </section><div class="form-actions"><button class="secondary" type="button" data-close="appointment-dialog">Cancelar</button><button class="primary" type="submit">Salvar agendamento</button></div>
+      </section><div class="form-actions"><button class="secondary" type="button" data-close="appointment-dialog">Cancelar</button><button class="primary" type="submit">Salvar pedido</button></div>
+      <div class="order-total-bar"><strong><span id="pizza-count">0</span> pizzas</strong><strong>Itens: <span id="items-total">R$ 0,00</span></strong></div>
     </form>
   </dialog>
   <dialog id="flavor-dialog"><div class="dialog-head"><h2 id="flavor-title">Adicionar sabor</h2><button class="close-btn" type="button" data-close="flavor-dialog" aria-label="Fechar">×</button></div>
@@ -66,7 +97,6 @@
   <script defer src="js/filtros.js"></script>
   <script defer src="js/resumo.js"></script>
   <script defer src="js/comanda.js"></script>
-  <script defer src="js/backup.js"></script>
   <script defer src="js/ui.js"></script>
   <script defer src="js/app.js"></script>
 </body>

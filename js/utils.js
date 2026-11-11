@@ -17,6 +17,15 @@
     todayISO(date = new Date()) {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     },
+    localDateTime(date = new Date()) {
+      return `${this.todayISO(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`;
+    },
+    addMinutes(value, minutes) {
+      const date = new Date(value);
+      if (!Number.isFinite(date.getTime())) return "";
+      date.setMinutes(date.getMinutes() + Number(minutes || 0));
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    },
     // Converte ISO em data local sem deslocamento de fuso.
     isoToDate(value) {
       const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
@@ -89,6 +98,7 @@
     statusClass(status) {
       return ({
         "Agendado": "status-agendado",
+        "Recebido": "status-agendado",
         "Em preparo": "status-em-preparo",
         "Saiu para entrega": "status-saiu-para-entrega",
         "Entregue": "status-entregue",
@@ -106,7 +116,13 @@
     },
     // Ordena os pedidos por data e horário.
     sortAppointments(list) {
-      return [...list].sort((a, b) => `${a.date || ""}T${a.time || ""}`.localeCompare(`${b.date || ""}T${b.time || ""}`));
+      return [...list].sort((a, b) => {
+        if (a.type === "presencial" || b.type === "presencial") {
+          if (a.type !== b.type) return a.type === "buffet" ? -1 : 1;
+          return String(a.orderedAt || a.createdAt || "").localeCompare(String(b.orderedAt || b.createdAt || ""));
+        }
+        return `${a.date || ""}T${a.time || ""}`.localeCompare(`${b.date || ""}T${b.time || ""}`);
+      });
     }
   };
 })(window);

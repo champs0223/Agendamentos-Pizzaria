@@ -1,15 +1,21 @@
 /* Dados, validações, totais e operações dos agendamentos. */
 (function (window) {
   const App = window.App = window.App || {};
-  const STATUSES = ["Agendado", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+  const STATUSES = ["Agendado", "Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+  const PRESENTIAL_STATUSES = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
   let items = [];
 
   // Completa e normaliza os campos recebidos do armazenamento ou do backup.
   function normalize(item) {
     return {
       ...item,
+      type: item.type === "presencial" ? "presencial" : "buffet",
       date: String(item.date || ""),
       time: String(item.time || ""),
+      orderNumber: Number(item.orderNumber) || 0,
+      orderedAt: String(item.orderedAt || item.createdAt || ""),
+      etaMinutes: item.etaMinutes === "" || item.etaMinutes == null ? "" : Math.max(0, Number(item.etaMinutes) || 0),
+      paymentForm: ["Dinheiro", "Pix", "Cartão", "Pendente"].includes(item.paymentForm) ? item.paymentForm : "Pendente",
       deliveryFee: Number(item.deliveryFee) || 0,
       discountType: item.discountType === "percent" ? "percent" : "amount",
       discountValue: Number(item.discountValue) || 0,
@@ -27,6 +33,7 @@
 
   App.Agendamentos = {
     statuses: STATUSES,
+    presentialStatuses: PRESENTIAL_STATUSES,
     normalize,
     // Carrega os pedidos persistidos no navegador.
     init() {
@@ -34,6 +41,20 @@
       items = Array.isArray(saved)
         ? saved.filter(item => item && item.id && Array.isArray(item.pizzas)).map(normalize)
         : [];
+      let changed = Array.isArray(saved) && saved.some(item => item && !item.type);
+      const dailyNumbers = new Map();
+      items = items.map(item => {
+        if (item.type !== "presencial" || item.orderNumber) return item;
+        const day = item.orderedAt.slice(0, 10) || App.Utils.todayISO();
+        const existingMax = items.filter(other =>
+          other.type === "presencial" && other.orderedAt.slice(0, 10) === day
+        ).reduce((max, other) => Math.max(max, Number(other.orderNumber) || 0), 0);
+        const number = Math.max(existingMax, dailyNumbers.get(day) || 0) + 1;
+        dailyNumbers.set(day, number);
+        changed = true;
+        return { ...item, orderNumber: number };
+      });
+      if (changed) App.Storage.write(App.Storage.keys.appointments, items);
     },
     // Retorna uma cópia dos pedidos atuais.
     getAll() { return [...items]; },
@@ -109,18 +130,21 @@
     validate(item, dateText) {
       const errors = {};
       if (!item.name) errors.name = "Informe o nome de quem pediu.";
-      const digits = item.phone.replace(/\D/g, "");
+      const digits = String(item.phone || "").replace(/\D/g, "");
       if (digits.length < 10 || digits.length > 11) errors.phone = "Informe um telefone com DDD (10 ou 11 dígitos).";
-      if (!dateText) errors.date = "Informe a data no formato dd/mm/aaaa.";
-      else if (!item.date) errors.date = "Data inválida. Informe uma data existente no formato dd/mm/aaaa.";
-      if (!item.time) errors.time = "Informe o horário no formato HH:MM.";
-      else if (!App.Utils.timeValid(item.time)) errors.time = "Horário inválido. Use 00:00 a 23:59.";
+      if (!item.street || !item.number || !item.neighborhood) errors.address = "Informe rua, número e bairro do endereço de entrega.";
+      if (item.type !== "presencial") {
+        if (!dateText) errors.date = "Informe a data no formato dd/mm/aaaa.";
+        else if (!item.date) errors.date = "Data inválida. Informe uma data existente no formato dd/mm/aaaa.";
+        if (!item.time) errors.time = "Informe o horário no formato HH:MM.";
+        else if (!App.Utils.timeValid(item.time)) errors.time = "Horário inválido. Use 00:00 a 23:59.";
+      }
       if (!item.pizzas.length || item.pizzas.some(pizza =>
         !pizza.flavor || !["Broto", "Média", "Grande"].includes(pizza.size) ||
         !Number.isInteger(pizza.quantity) || pizza.quantity < 1 ||
         !Number.isFinite(pizza.unitPrice) || pizza.unitPrice < 0
       )) errors.pizzas = "Preencha sabor, tamanho, quantidade maior que zero e preço de cada item.";
-      if (item.people !== "" && (!Number.isInteger(item.people) || item.people < 1)) {
+      if (item.type !== "presencial" && item.people !== "" && (!Number.isInteger(item.people) || item.people < 1)) {
         errors.people = "Informe uma quantidade inteira maior que zero.";
       }
       return errors;

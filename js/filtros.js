@@ -8,10 +8,12 @@
       const query = String(values.query || "").trim().toLocaleLowerCase("pt-BR");
       const status = values.status || "all";
       return App.Utils.sortAppointments(appointments).filter(item => {
-        const searchable = `${item.name || ""} ${item.phone || ""}`.toLocaleLowerCase("pt-BR");
+        const searchable = `${item.name || ""} ${item.phone || ""} ${item.orderNumber || ""}`.toLocaleLowerCase("pt-BR");
         return searchable.includes(query) &&
+          (!values.type || values.type === "all" || item.type === values.type) &&
           (status === "all" || item.status === status) &&
-          this.matchesDate(item, values);
+          (item.type === "presencial" ? item.orderedAt.slice(0, 10) : item.date) &&
+          this.matchesDate(item.type === "presencial" ? { ...item, date: item.orderedAt.slice(0, 10) } : item, values);
       });
     },
     // Verifica se a data do pedido pertence ao período escolhido.
