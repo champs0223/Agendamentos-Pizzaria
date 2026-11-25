@@ -86,10 +86,91 @@ dialog[open] { display: flex; flex-direction: column; }
 .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; }
 .menu-actions { display: flex; gap: 7px; white-space: nowrap; }
+
+/* Mascavo Pizzas operation dashboard refresh. */
+.topbar { min-height: 76px; background: var(--dark); padding: 14px max(22px, calc((100% - 1280px)/2)); justify-content: space-between; }
+.brand-icon { border-radius: 13px; font: 800 24px/1 Georgia, serif; }
+.brand small { opacity: 1; color: #d7c9bd; font-size: .78rem; letter-spacing: .04em; }
+.topbar-note, .integration-status { display: flex; align-items: center; gap: 8px; color: #e8ddd4; font-size: .84rem; }
+.online-dot { width: 8px; height: 8px; display: inline-block; flex: 0 0 8px; border-radius: 50%; background: #83b68c; }
+main { max-width: 1280px; margin: 0 auto 60px; padding: 0 28px; }
+.page-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 34px 0 25px; }
+.page-intro h2 { margin: 0 0 7px; font: 700 clamp(1.7rem, 3vw, 2.2rem)/1.15 Georgia, "Times New Roman", serif; letter-spacing: -.025em; }
+.page-intro p:not(.eyebrow) { margin: 0; color: var(--muted); }
+.eyebrow { margin: 0 0 8px; color: var(--red); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
+.tabs { gap: 5px; margin-bottom: 26px; overflow-x: auto; scrollbar-width: thin; }
+.tab { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; border-bottom: 2px solid transparent; padding: 12px 14px 13px; font-weight: 700; white-space: nowrap; }
+.tab > span { font-size: 1.1rem; }
+.tab.active { color: var(--dark); border-bottom-color: var(--red); }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 16px; }
+.section-heading h2 { margin: 0 0 3px; font: 700 1.48rem/1.25 Georgia, "Times New Roman", serif; }
+.section-heading p { margin: 0; }
+.today-label { color: var(--muted); font-size: .88rem; text-transform: capitalize; }
+.overview, .satisfaction-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+.satisfaction-metrics { margin: 0 0 16px; }
+.satisfaction-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+.filters { gap: 12px; }
+.appointment-list { gap: 13px; }
+.kitchen-panels { gap: 16px; }
+.production-flavors ul { gap: 8px; }
+.production-flavors li { border-radius: 8px; background: #f6eee5; color: #684c36; }
+.kitchen-card { border-left-width: 4px; }
+.kitchen-card.overdue { border-left-color: #b94a3f; background: #fff7f5; }
+.kitchen-card.nearby { border-left-color: var(--yellow); background: #fffaf0; }
+.kitchen-card summary::after { font-size: .8rem; }
+.kitchen-card[open] summary::after { content: "− Recolher"; }
+.kitchen-moment { font-size: 1rem; }
+.kitchen-customer { font-size: .98rem; }
+.kitchen-items { color: #5e534b; font-size: .9rem; }
+.advance-status { min-height: 46px; }
+.upcoming-card { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 0; }
+.type-choice-button { border-width: 1px; border-radius: 10px; font-size: 1rem; }
+.type-choice-button[aria-pressed="true"] { background: #faf2eb; }
+.type-badge { font-size: .76rem; }
+.type-buffet { color: #75420c; background: #f8e7cb; }
+.type-massas, .type-presential { color: #47664d; background: #e2eee2; }
+.rating-distribution { display: grid; gap: 12px; padding: 5px 0; }
+.rating-row { display: grid; grid-template-columns: 28px minmax(60px, 1fr) 28px; align-items: center; gap: 10px; font-size: .88rem; }
+.rating-row > span { color: #a66a30; font-weight: 750; }
+.rating-row > strong { text-align: right; font-size: .82rem; }
+.rating-track { height: 9px; overflow: hidden; border-radius: 99px; background: #f0ebe6; }
+.rating-track span { display: block; height: 100%; border-radius: inherit; background: #c58a4c; }
+.satisfaction-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.chart-panel { min-width: 0; }
+.chart-panel svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-gridline { stroke: #e9e1d9; stroke-width: 1; }
+.chart-axis-label, .chart-value-label { fill: #81756d; font: 12px system-ui, sans-serif; }
+.chart-value-label { fill: #5e5147; font-weight: 700; }
+.chart-line { fill: none; stroke: #a95f32; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart-dot { fill: #fff; stroke: #a95f32; stroke-width: 3; }
+.chart-bar { fill: #c58a4c; }
+.chart-empty-label { fill: #81756d; font: 13px system-ui, sans-serif; }
+.chart-empty { color: var(--muted); font-size: .82rem; text-align: center; margin: 14px 0 0; }
+.feedback-list { display: grid; gap: 10px; }
+.feedback-card { padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.feedback-card p { margin: 8px 0; color: #5d5149; }
+.feedback-card small { color: var(--muted); }
+.feedback-head { display: flex; justify-content: space-between; gap: 12px; }
+.feedback-rating { color: #b67a38; letter-spacing: .04em; white-space: nowrap; }
+.integration-note { margin: 16px 0; padding: 16px 18px; border: 1px solid #eadbc6; border-radius: 11px; background: #fbf5eb; color: #66503a; }
+.integration-note strong { color: var(--dark); }
+.integration-note p { margin: 5px 0 0; font-size: .9rem; }
+@media (max-width: 760px) {
+  .topbar { padding: 14px 18px; }
+  main { padding: 0 18px; }
+  .page-intro { padding: 25px 0 18px; }
+  .satisfaction-grid, .satisfaction-charts { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  main { margin-top: 0; padding: 0 12px; }
+  .topbar-note { display: none; }
+  .page-intro { align-items: flex-start; }
+  .page-intro h2 { font-size: 1.75rem; }
+  .page-intro p:not(.eyebrow) { max-width: 28ch; font-size: .88rem; }
+  .overview, .satisfaction-metrics { grid-template-columns: 1fr; }
+}
 @media (max-width: 760px) {
   .topbar { padding: 15px 18px; }
-  #new-appointment { position: fixed; right: 16px; bottom: 16px; z-index: 10; min-height: 54px; padding: 12px 18px; border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,.24); }
-  body { padding-bottom: 74px; }
   .filters { grid-template-columns: 1fr 1fr; }
   .filters .search { grid-column: 1 / -1; }
   .card-grid, .summary-content { grid-template-columns: 1fr; }

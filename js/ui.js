@@ -5,10 +5,11 @@
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const sizes = ["Broto", "Média", "Grande"];
   let editingId = null;
-  let activeType = "presencial";
+  let activeType = "massas";
+  let activeTab = "kitchen";
   let pizzaSelections = [];
   let customSelections = [];
-  let statusByType = { presencial: "Recebido", buffet: "Agendado" };
+  let statusByType = { massas: "Agendado", buffet: "Agendado" };
   let undoTimer = null;
   let undoItem = null;
 
@@ -93,22 +94,23 @@
   }
 
   function setOrderType(type) {
-    activeType = type === "presencial" ? "presencial" : "buffet";
+    activeType = type === "buffet" ? "buffet" : "massas";
     $("#order-type").value = activeType;
     $$(".buffet-only").forEach(node => node.classList.toggle("hidden", activeType !== "buffet"));
-    $$(".presential-only").forEach(node => node.classList.toggle("hidden", activeType !== "presencial"));
+    $$(".massas-only").forEach(node => node.classList.toggle("hidden", activeType !== "massas"));
     $$("[data-order-type]").forEach(button => {
       button.setAttribute("aria-pressed", String(button.dataset.orderType === activeType));
       button.disabled = Boolean(editingId);
     });
     $("#form-title").textContent = editingId ? "Editar pedido" : "Novo pedido";
-    $("#status").innerHTML = (activeType === "buffet" ? ["Agendado", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"] : App.Agendamentos.presentialStatuses)
+    $("#customer-name-label").textContent = activeType === "buffet" ? "Nome de quem contratou *" : "Nome da pizzaria *";
+    $("#status").innerHTML = App.Agendamentos.statuses
       .map(status => `<option>${status}</option>`).join("");
-    $("#status").value = statusByType[activeType] || (activeType === "buffet" ? "Agendado" : "Recebido");
+    $("#status").value = statusByType[activeType] || "Agendado";
     $("#order-number-display").textContent = String(
       App.Agendamentos.find(editingId)?.orderNumber || nextOrderNumber(App.Utils.todayISO())
     );
-    if (activeType === "buffet") $("#order-number-display").textContent = "";
+    if (activeType === "buffet") $("#order-number-display").textContent = "—";
   }
 
   function setAppointmentForm(item = null, type = activeType) {
@@ -121,7 +123,7 @@
     $("#delivery-date").value = item?.date ? App.Utils.displayDate(item.date) : "";
     $("#delivery-time").value = item?.time || "";
     $("#people").value = item?.people || "";
-    const defaultStatus = activeType === "buffet" ? "Agendado" : "Recebido";
+    const defaultStatus = "Agendado";
     $("#status").value = item?.status && Array.from($("#status").options).some(option => option.value === item.status)
       ? item.status : defaultStatus;
     $("#street").value = item?.street || "";
@@ -165,7 +167,7 @@
   }
 
   function nextOrderNumber(date) {
-    return App.Agendamentos.getAll().filter(item => item.type === "presencial" &&
+    return App.Agendamentos.getAll().filter(item => item.type === "massas" &&
       item.orderedAt.slice(0, 10) === date
     ).reduce((max, item) => Math.max(max, Number(item.orderNumber) || 0), 0) + 1;
   }
@@ -174,14 +176,12 @@
     const type = $("#order-type").value;
     const previous = App.Agendamentos.find(editingId);
     const pizzas = pizzasFromForm();
-    const date = type === "buffet" ? App.Utils.dateToISO($("#delivery-date").value) : "";
+    const date = App.Utils.dateToISO($("#delivery-date").value) || "";
     const deliveryFee = Math.max(0, Number($("#delivery-fee").value) || 0);
     const discountType = $("#discount-type").value;
     const discountValue = Math.max(0, Number($("#discount").value) || 0);
     const totals = App.Agendamentos.calculate(pizzas, deliveryFee, discountType, discountValue);
-    const orderedAt = type === "presencial"
-      ? (previous?.type === "presencial" ? previous.orderedAt : App.Utils.localDateTime())
-      : (previous?.orderedAt || App.Utils.localDateTime());
+    const orderedAt = previous?.orderedAt || App.Utils.localDateTime();
     const orderDate = orderedAt.slice(0, 10) || App.Utils.todayISO();
     return {
       ...(previous || {}),
@@ -190,7 +190,7 @@
       name: $("#customer-name").value.trim(),
       phone: $("#customer-phone").value.trim(),
       date: date || "",
-      time: type === "buffet" ? $("#delivery-time").value : "",
+      time: $("#delivery-time").value,
       people: type === "buffet" && $("#people").value ? Number($("#people").value) : "",
       street: $("#street").value.trim(),
       number: $("#number").value.trim(),
@@ -207,10 +207,10 @@
       total: totals.total,
       deposit: type === "buffet" ? Math.max(0, Number($("#deposit").value) || 0) : 0,
       paymentForm: $("#payment-form").value,
-      etaMinutes: type === "presencial" ? ($("#eta-minutes").value ? Number($("#eta-minutes").value) : "") : "",
+      etaMinutes: type === "massas" ? ($("#eta-minutes").value ? Number($("#eta-minutes").value) : "") : "",
       status: $("#status").value,
       orderedAt,
-      orderNumber: type === "presencial" ? (previous?.type === "presencial" ? previous.orderNumber : nextOrderNumber(orderDate)) : 0,
+      orderNumber: type === "massas" ? (previous?.type === "massas" ? previous.orderNumber : nextOrderNumber(orderDate)) : 0,
       createdAt: previous?.createdAt || new Date().toISOString()
     };
   }
@@ -225,13 +225,12 @@
       if (target) target.textContent = message;
     });
     if (Object.keys(errors).length) return;
-    if (item.type === "buffet" && App.Agendamentos.hasPassed(item.date, item.time) &&
+    if (App.Agendamentos.hasPassed(item.date, item.time) &&
       !confirm("A data e o horário escolhidos já passaram. Deseja salvar mesmo assim?")) return;
-    if (item.type === "buffet") {
-      const nearby = App.Agendamentos.near(item);
-      if (nearby.length && !confirm(`Há outro agendamento a menos de 30 minutos: ${nearby.map(entry => `${entry.name} (${entry.time})`).join(", ")}. Salvar mesmo assim?`)) return;
-      if (item.deposit > item.total && !confirm("O sinal informado é maior que o valor total. Deseja salvar mesmo assim?")) return;
-    }
+    const nearby = App.Agendamentos.near(item);
+    if (nearby.length && !confirm(`Há outro agendamento a menos de 30 minutos: ${nearby.map(entry => `${entry.name} (${entry.time})`).join(", ")}. Salvar mesmo assim?`)) return;
+    if (item.type === "buffet" && item.deposit > item.total &&
+      !confirm("O sinal informado é maior que o valor total. Deseja salvar mesmo assim?")) return;
     const isEditing = Boolean(editingId);
     if (!App.Agendamentos.save(item)) return;
     $("#appointment-dialog").close();
@@ -241,18 +240,21 @@
   }
 
   function renderMetrics() {
-    const appointments = App.Agendamentos.getAll().filter(item => item.type === "buffet");
+    const appointments = App.Agendamentos.getAll();
     const today = App.Utils.todayISO();
     const upcoming = appointments.filter(item =>
       item.date > today && !["Cancelado", "Entregue"].includes(item.status)
     );
     $("#metric-today").textContent = appointments.filter(item =>
-      item.date === today && item.status !== "Cancelado"
+      item.type === "massas" && item.date === today && item.status !== "Cancelado"
     ).length;
     $("#metric-upcoming").textContent = upcoming.length;
     $("#metric-balance").textContent = App.Utils.money(appointments
       .filter(item => !["Entregue", "Cancelado"].includes(item.status))
-      .reduce((sum, item) => sum + App.Utils.balance(item), 0));
+      .reduce((sum, item) => sum + (item.type === "buffet" ? App.Utils.balance(item) : Number(item.total) || 0), 0));
+    $("#today-label").textContent = new Date().toLocaleDateString("pt-BR", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
+    });
   }
 
   function pizzaDescription(pizza) {
@@ -264,7 +266,7 @@
   }
 
   function advanceStatus(item) {
-    const sequence = item.type === "presencial"
+    const sequence = item.status === "Recebido"
       ? ["Recebido", "Em preparo", "Saiu para entrega", "Entregue"]
       : ["Agendado", "Em preparo", "Saiu para entrega", "Entregue"];
     const currentIndex = sequence.indexOf(item.status);
@@ -297,19 +299,12 @@
     $("#undo-notice").classList.add("hidden");
   }
 
-  function kitchenCard(item, kind) {
-    const isPresential = item.type === "presencial";
+  function kitchenCard(item) {
+    const isMassas = item.type === "massas";
     const address = App.Utils.address(item);
     const total = App.Utils.money(item.total);
     const balance = App.Utils.money(App.Utils.balance(item));
-    const moment = isPresential
-      ? `#${item.orderNumber} · ${item.orderedAt.slice(11, 16)}`
-      : `${App.Utils.escape(item.time)} · ${App.Utils.escape(item.name)}`;
-    const waitMinutes = isPresential
-      ? Math.max(0, Math.floor((Date.now() - new Date(item.orderedAt).getTime()) / 60000))
-      : 0;
-    const status = isPresential ? ["Recebido", "Em preparo", "Saiu para entrega", "Entregue"] :
-      ["Agendado", "Em preparo", "Saiu para entrega", "Entregue"];
+    const moment = `${App.Utils.displayDate(item.date)} · ${App.Utils.escape(item.time)}${isMassas ? ` · #${item.orderNumber}` : ""}`;
     const nextLabel = {
       Recebido: "Iniciar preparo",
       Agendado: "Iniciar preparo",
@@ -319,15 +314,13 @@
     const now = new Date();
     const deliveryAt = new Date(`${item.date}T${item.time || "00:00"}:00`);
     const minutesUntil = (deliveryAt.getTime() - now.getTime()) / 60000;
-    const warning = kind === "day"
-      ? waitMinutes > 40 && !["Saiu para entrega", "Entregue"].includes(item.status)
-      : minutesUntil < 0 ? "overdue" : minutesUntil < 60 ? "nearby" : "";
-    const classes = ["kitchen-card", warning === true ? "waiting-long" : warning].filter(Boolean).join(" ");
+    const warning = minutesUntil < 0 ? "overdue" : minutesUntil < 60 ? "nearby" : "";
+    const classes = ["kitchen-card", warning].filter(Boolean).join(" ");
     const button = nextLabel ? `<button type="button" class="primary advance-status" data-advance="${App.Utils.escape(item.id)}">${nextLabel}</button>` : "";
-    return `<details class="${classes}"><summary><span class="kitchen-moment">${moment}</span>${isPresential ? `<span class="kitchen-customer">${App.Utils.escape(item.name)}</span>` : ""}
-        <span class="kitchen-items">${App.Utils.escape(compactItems(item))}</span>${item.notes ? `<span class="kitchen-note">${App.Utils.escape(item.notes)}</span>` : ""}${warning === "nearby" ? '<span class="kitchen-alert">Próximo</span>' : warning === "overdue" ? '<span class="kitchen-alert">Atrasado</span>' : warning ? `<span class="kitchen-alert">Espera: ${waitMinutes} min</span>` : ""}</summary>
+    return `<details class="${classes}"><summary><span class="kitchen-moment">${moment}</span>
+        <span class="kitchen-customer">${App.Utils.escape(item.name)}</span><span class="kitchen-items">${App.Utils.escape(compactItems(item))}</span>${item.notes ? `<span class="kitchen-note">${App.Utils.escape(item.notes)}</span>` : ""}${warning === "nearby" ? '<span class="kitchen-alert">Próximo</span>' : warning === "overdue" ? '<span class="kitchen-alert">Atrasado</span>' : ""}</summary>
       <div class="kitchen-details"><p><strong>Cliente:</strong> ${App.Utils.escape(item.name)} · <strong>Telefone:</strong> ${App.Utils.escape(item.phone)}</p>
-        <p><strong>Endereço:</strong> ${App.Utils.escape(address || "Não informado")}</p>${isPresential
+        <p><strong>Endereço:</strong> ${App.Utils.escape(address || "Não informado")}</p>${isMassas
         ? `<p><strong>Total:</strong> ${total} · <strong>Pagamento:</strong> ${App.Utils.escape(item.paymentForm || "Pendente")}</p>`
         : `<p><strong>Pessoas:</strong> ${App.Utils.escape(item.people || "—")} · <strong>Restante:</strong> ${balance}</p>`}
         ${button}</div></details>`;
@@ -337,14 +330,14 @@
     const all = App.Agendamentos.getAll();
     const today = App.Utils.todayISO();
     const actionable = all.filter(item => !["Entregue", "Cancelado"].includes(item.status));
-    const dayOrders = actionable.filter(item => item.type === "presencial" && item.orderedAt.slice(0, 10) === today)
-      .sort((a, b) => a.orderedAt.localeCompare(b.orderedAt));
+    const dayOrders = actionable.filter(item => item.type === "massas" && item.date === today)
+      .sort((a, b) => a.time.localeCompare(b.time));
     const todayBuffets = actionable.filter(item => item.type === "buffet" && item.date === today)
       .sort((a, b) => a.time.localeCompare(b.time));
-    const upcoming = actionable.filter(item => item.type === "buffet" && item.date > today)
+    const upcoming = actionable.filter(item => item.date > today)
       .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
     const production = new Map();
-    actionable.filter(item => (item.type === "buffet" ? item.date : item.orderedAt.slice(0, 10)) === today)
+    actionable.filter(item => item.date === today)
       .forEach(item => item.pizzas.forEach(pizza => {
         const key = `${pizza.flavor}|${pizza.size}`;
         production.set(key, (production.get(key) || 0) + (Number(pizza.quantity) || 0));
@@ -360,21 +353,19 @@
     $("#today-orders-count").textContent = String(dayOrders.length);
     $("#today-buffets-count").textContent = String(todayBuffets.length);
     $("#today-orders").innerHTML = dayOrders.length
-      ? dayOrders.map(item => kitchenCard(item, "day")).join("")
-      : '<div class="empty">Nenhum pedido do dia aguardando.</div>';
+      ? dayOrders.map(kitchenCard).join("")
+      : '<div class="empty">Nenhum agendamento de massas para hoje.</div>';
     $("#today-buffets").innerHTML = todayBuffets.length
-      ? todayBuffets.map(item => kitchenCard(item, "buffet")).join("")
+      ? todayBuffets.map(kitchenCard).join("")
       : '<div class="empty">Nenhum buffet pendente para hoje.</div>';
     $("#upcoming-buffets").innerHTML = upcoming.length
-      ? upcoming.map(item => `<div class="upcoming-card"><strong>${App.Utils.displayDate(item.date)} · ${App.Utils.escape(item.time)}</strong> — ${App.Utils.escape(item.name)} <span class="muted">(${item.pizzas.reduce((sum, pizza) => sum + (Number(pizza.quantity) || 0), 0)} pizzas · ${App.Utils.money(item.total)})</span></div>`).join("")
-      : '<p class="muted">Nenhum buffet futuro.</p>';
+      ? upcoming.map(item => `<div class="upcoming-card"><strong>${App.Utils.displayDate(item.date)} · ${App.Utils.escape(item.time)}</strong> — ${App.Utils.escape(item.name)} <span class="type-badge ${item.type === "massas" ? "type-massas" : "type-buffet"}">${item.type === "massas" ? "Massas" : "Buffet"}</span><span class="muted">(${item.pizzas.reduce((sum, pizza) => sum + (Number(pizza.quantity) || 0), 0)} pizzas · ${App.Utils.money(item.total)})</span></div>`).join("")
+      : '<p class="muted">Nenhum agendamento futuro.</p>';
     renderMetrics();
   }
 
   function orderTimestamp(item) {
-    return item.type === "presencial"
-      ? new Date(item.orderedAt).getTime()
-      : new Date(`${item.date}T${item.time || "00:00"}:00`).getTime();
+    return new Date(`${item.date}T${item.time || "00:00"}:00`).getTime();
   }
 
   function creationTimestamp(item) {
@@ -390,19 +381,15 @@
       from: $("#date-from").value,
       to: $("#date-to").value,
     });
-    const type = $("#type-filter").value;
+    const type = activeTab === "massas" ? "massas" : "buffet";
     const orders = filtered.filter(item => type === "all" || item.type === type);
     orders.sort((a, b) => $("#sort-orders").value === "delivery"
       ? orderTimestamp(a) - orderTimestamp(b)
       : creationTimestamp(b) - creationTimestamp(a));
     $("#result-count").textContent = `${orders.length} ${orders.length === 1 ? "pedido" : "pedidos"}`;
     $("#appointment-list").innerHTML = orders.length ? orders.map(item => {
-      const isPresential = item.type === "presencial";
-      const time = isPresential ? item.orderedAt.slice(11, 16) : item.time;
-      const date = isPresential ? item.orderedAt.slice(0, 10) : item.date;
-      const waitMinutes = isPresential ? Math.max(0, Math.floor((Date.now() - new Date(item.orderedAt).getTime()) / 60000)) : 0;
-      const waiting = isPresential && !["Saiu para entrega", "Entregue", "Cancelado"].includes(item.status);
-      const late = isPresential ? waiting && waitMinutes >= 40 : App.Agendamentos.hasPassed(item.date, item.time) &&
+      const isMassas = item.type === "massas";
+      const late = App.Agendamentos.hasPassed(item.date, item.time) &&
         !["Entregue", "Cancelado"].includes(item.status);
       const address = App.Utils.address(item);
       const map = address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : "";
@@ -412,20 +399,20 @@
       const discount = item.discountType === "percent"
         ? `${item.discountValue}% (${App.Utils.money(totals.discount)})`
         : App.Utils.money(totals.discount);
-      const orderMoment = isPresential
-        ? `Comanda nº ${item.orderNumber} · ${App.Utils.displayDate(date)} às ${App.Utils.escape(time)}${item.etaMinutes ? ` · previsão ${App.Utils.escape(App.Utils.addMinutes(item.orderedAt, item.etaMinutes))}` : ""}`
-        : `${App.Utils.displayDate(date)} às ${App.Utils.escape(time)}`;
-      const statusOptions = (isPresential ? App.Agendamentos.presentialStatuses :
-        ["Agendado", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"]).map(status =>
+      const eta = isMassas && item.etaMinutes
+        ? ` · previsão ${App.Utils.escape(App.Utils.addMinutes(`${item.date}T${item.time}`, item.etaMinutes))}`
+        : "";
+      const orderMoment = `${App.Utils.displayDate(item.date)} às ${App.Utils.escape(item.time)}${isMassas ? ` · Pedido nº ${item.orderNumber}` : ""}${eta}`;
+      const statusOptions = App.Agendamentos.statuses.map(status =>
         `<option ${item.status === status ? "selected" : ""}>${status}</option>`).join("");
       return `<article class="appointment ${late ? "late" : ""}">
-        <div class="card-head"><div><h3>${App.Utils.escape(item.name)}</h3><div class="card-date">${orderMoment}${late ? ` · <strong>${isPresential ? `Aguardando há ${waitMinutes} min` : "Atrasado"}</strong>` : ""}</div></div>
-          <div class="card-badges"><span class="type-badge ${isPresential ? "type-presential" : "type-buffet"}">${isPresential ? "Pedido do dia" : "Buffet"}</span><span class="badge ${App.Utils.statusClass(item.status)}">${App.Utils.escape(item.status || (isPresential ? "Recebido" : "Agendado"))}</span></div></div>
-        <div class="card-grid"><div><p><strong>Telefone:</strong> ${App.Utils.escape(item.phone)}</p><p><strong>Endereço:</strong> ${App.Utils.escape(address || "Não informado")}</p>${!isPresential && item.people ? `<p><strong>Pessoas:</strong> ${App.Utils.escape(item.people)}</p>` : ""}${isPresential ? `<p><strong>Pagamento:</strong> ${App.Utils.escape(item.paymentForm || "Pendente")}${waiting ? ` · <strong>Espera:</strong> ${waitMinutes} min` : ""}</p>` : ""}</div>
+        <div class="card-head"><div><h3>${App.Utils.escape(item.name)}</h3><div class="card-date">${orderMoment}${late ? ' · <strong>Atrasado</strong>' : ""}</div></div>
+          <div class="card-badges"><span class="type-badge ${isMassas ? "type-massas" : "type-buffet"}">${isMassas ? "Massas para pizzaria" : "Buffet"}</span><span class="badge ${App.Utils.statusClass(item.status)}">${App.Utils.escape(item.status || "Agendado")}</span></div></div>
+        <div class="card-grid"><div><p><strong>Telefone:</strong> ${App.Utils.escape(item.phone)}</p><p><strong>Endereço:</strong> ${App.Utils.escape(address || "Não informado")}</p>${!isMassas && item.people ? `<p><strong>Pessoas:</strong> ${App.Utils.escape(item.people)}</p>` : ""}${isMassas ? `<p><strong>Pagamento:</strong> ${App.Utils.escape(item.paymentForm || "Pendente")}</p>` : ""}</div>
           <div><p><strong>Pizzas:</strong></p><ul>${item.pizzas.map(pizza => `<li>${pizzaDescription(pizza)}</li>`).join("")}</ul></div>
           <div><p><strong>Observações:</strong> ${App.Utils.escape(item.notes || "Nenhuma")}</p></div>
           <div><p><strong>Subtotal:</strong> ${App.Utils.money(totals.subtotal)} · <strong>Taxa:</strong> ${App.Utils.money(item.deliveryFee)} · <strong>Desconto:</strong> ${discount}</p>
-            <p><strong>Total:</strong> ${App.Utils.money(item.total)}${isPresential ? "" : ` · <strong>Sinal:</strong> ${App.Utils.money(item.deposit)} · <strong>Restante:</strong> ${App.Utils.money(App.Utils.balance(item))}`}</p></div></div>
+            <p><strong>Total:</strong> ${App.Utils.money(item.total)}${isMassas ? "" : ` · <strong>Sinal:</strong> ${App.Utils.money(item.deposit)} · <strong>Restante:</strong> ${App.Utils.money(App.Utils.balance(item))}`}</p></div></div>
         <div class="card-actions"><select aria-label="Alterar status de ${App.Utils.escape(item.name)}" data-status-id="${App.Utils.escape(item.id)}">${statusOptions}</select>
           <button class="secondary small-btn" data-edit="${App.Utils.escape(item.id)}" type="button">Editar</button><button class="danger small-btn" data-delete="${App.Utils.escape(item.id)}" type="button">Excluir</button>
           <button class="secondary small-btn" data-print="${App.Utils.escape(item.id)}" type="button">Imprimir comanda</button><a class="secondary small-btn" href="https://wa.me/${encodeURIComponent(whatsapp)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
@@ -439,15 +426,15 @@
     const summary = App.Resumo.build(dateISO || "", App.Agendamentos.getAll(), $("#summary-type").value);
     const buffets = summary.deliveries.filter(item => item.type === "buffet")
       .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
-    const presencial = summary.deliveries.filter(item => item.type === "presencial")
-      .sort((a, b) => a.orderedAt.localeCompare(b.orderedAt));
+    const massas = summary.deliveries.filter(item => item.type === "massas")
+      .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
     const delivery = item => `<li>${App.Utils.escape(item.name)}${App.Utils.address(item) ? ` · ${App.Utils.escape(App.Utils.address(item))}` : ""} (${item.pizzas.reduce((sum, pizza) => sum + (Number(pizza.quantity) || 0), 0)} pizzas) — ${App.Utils.money(item.total)}</li>`;
     $("#summary-content").innerHTML = `<div><h3>Produção — ${dateISO ? App.Utils.displayDate(dateISO) : "data inválida"}</h3>
       <p><strong>Total de pizzas:</strong> ${summary.pizzaCount}</p><p><strong>Faturamento buffets:</strong> ${App.Utils.money(summary.buffetRevenue)}</p>
-      <p><strong>Faturamento pedidos do dia:</strong> ${App.Utils.money(summary.presentialRevenue)}</p><p><strong>Total geral:</strong> ${App.Utils.money(summary.revenue)}</p><p><strong>Sinais recebidos:</strong> ${App.Utils.money(summary.received)}</p>
+      <p><strong>Faturamento de massas:</strong> ${App.Utils.money(summary.massasRevenue)}</p><p><strong>Total geral:</strong> ${App.Utils.money(summary.revenue)}</p><p><strong>Sinais recebidos:</strong> ${App.Utils.money(summary.received)}</p>
       ${summary.flavors.length ? `<ul>${summary.flavors.map(item => `<li>${App.Utils.escape(item.flavor)} (${App.Utils.escape(item.size)}): <strong>${item.quantity}</strong></li>`).join("")}</ul>` : '<p class="muted">Nenhuma pizza para esta data.</p>'}
-      </div><div><h3>Entregas — buffets por horário</h3>${buffets.length ? `<ol>${buffets.map(item => `<li><strong>${App.Utils.escape(item.time)}</strong> — ${delivery(item).replace(/^<li>|<\/li>$/g, "")}</li>`).join("")}</ol>` : '<p class="muted">Nenhum buffet para esta data.</p>'}
-      <h3>Pedidos do dia — ordem de chegada</h3>${presencial.length ? `<ol>${presencial.map(item => `<li><strong>${App.Utils.escape(item.orderedAt.slice(11, 16))}</strong> — ${delivery(item).replace(/^<li>|<\/li>$/g, "")}</li>`).join("")}</ol>` : '<p class="muted">Nenhum pedido do dia para esta data.</p>'}</div>`;
+      </div><div><h3>Buffets — por horário</h3>${buffets.length ? `<ol>${buffets.map(item => `<li><strong>${App.Utils.escape(item.time)}</strong> — ${delivery(item).replace(/^<li>|<\/li>$/g, "")}</li>`).join("")}</ol>` : '<p class="muted">Nenhum buffet para esta data.</p>'}
+      <h3>Massas para pizzarias — por horário</h3>${massas.length ? `<ol>${massas.map(item => `<li><strong>${App.Utils.escape(item.time)}</strong> — ${delivery(item).replace(/^<li>|<\/li>$/g, "")}</li>`).join("")}</ol>` : '<p class="muted">Nenhum agendamento de massas para esta data.</p>'}</div>`;
   }
 
   function renderMenu() {
@@ -462,6 +449,112 @@
       <button class="secondary small-btn" type="button" data-menu-toggle="${App.Utils.escape(item.id)}">${item.available ? "Indisponibilizar" : "Disponibilizar"}</button>
       <button class="danger small-btn" type="button" data-menu-delete="${App.Utils.escape(item.id)}">Excluir</button></div></td></tr>`).join("");
     $("#menu-empty").classList.toggle("hidden", menu.length > 0);
+  }
+
+  function satisfactionMonths(feedback) {
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, index) =>
+      new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
+    ).map(date => ({
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+      label: date.toLocaleDateString("pt-BR", { month: "short" }),
+      count: 0,
+      total: 0
+    }));
+    const byKey = new Map(months.map(month => [month.key, month]));
+    feedback.forEach(item => {
+      const date = new Date(item.createdAt);
+      if (!Number.isFinite(date.getTime())) return;
+      const month = byKey.get(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
+      if (!month) return;
+      month.count += 1;
+      month.total += item.rating;
+    });
+    return months.map(month => ({
+      ...month,
+      average: month.count ? month.total / month.count : null
+    }));
+  }
+
+  function renderRatingTrend(months) {
+    const left = 54;
+    const top = 22;
+    const bottom = 174;
+    const step = 92;
+    const x = index => left + index * step;
+    const y = rating => bottom - ((rating - 1) / 4) * (bottom - top);
+    const segments = [];
+    let segment = [];
+    months.forEach((month, index) => {
+      if (month.average === null) {
+        if (segment.length) segments.push(segment);
+        segment = [];
+        return;
+      }
+      segment.push(`${x(index)},${y(month.average)}`);
+    });
+    if (segment.length) segments.push(segment);
+    const grid = [1, 2, 3, 4, 5].map(rating =>
+      `<line x1="${left}" y1="${y(rating)}" x2="570" y2="${y(rating)}" class="chart-gridline"/><text x="38" y="${y(rating) + 4}" class="chart-axis-label">${rating}</text>`
+    ).join("");
+    const lines = segments.filter(points => points.length > 1)
+      .map(points => `<polyline points="${points.join(" ")}" class="chart-line"/>`).join("");
+    const dots = months.map((month, index) => month.average === null ? "" :
+      `<circle cx="${x(index)}" cy="${y(month.average)}" r="4.5" class="chart-dot"><title>${month.label}: ${month.average.toFixed(1)} de 5</title></circle>`
+    ).join("");
+    const labels = months.map((month, index) =>
+      `<text x="${x(index)}" y="202" text-anchor="middle" class="chart-axis-label">${month.label}</text>`
+    ).join("");
+    const hasData = months.some(month => month.average !== null);
+    return `<svg viewBox="0 0 600 220" role="img" aria-label="Evolução mensal da nota média, de 1 a 5">${grid}${lines}${dots}${labels}${hasData ? "" : '<text x="312" y="105" text-anchor="middle" class="chart-empty-label">Aguardando avaliações reais</text>'}</svg>`;
+  }
+
+  function renderRatingVolume(months) {
+    const left = 54;
+    const bottom = 174;
+    const chartTop = 34;
+    const step = 92;
+    const max = Math.max(1, ...months.map(month => month.count));
+    const bars = months.map((month, index) => {
+      const height = month.count / max * (bottom - chartTop);
+      const center = left + index * step;
+      return `<rect x="${center - 17}" y="${bottom - height}" width="34" height="${height}" rx="5" class="chart-bar"><title>${month.label}: ${month.count} avaliações</title></rect><text x="${center}" y="202" text-anchor="middle" class="chart-axis-label">${month.label}</text><text x="${center}" y="${Math.max(chartTop - 7, bottom - height - 7)}" text-anchor="middle" class="chart-value-label">${month.count}</text>`;
+    }).join("");
+    const maxLabel = Math.max(1, ...months.map(month => month.count));
+    const hasData = months.some(month => month.count > 0);
+    return `<svg viewBox="0 0 600 220" role="img" aria-label="Volume mensal de avaliações nos últimos seis meses"><line x1="${left - 10}" y1="${chartTop}" x2="${left - 10}" y2="${bottom}" class="chart-gridline"/><line x1="${left - 10}" y1="${bottom}" x2="570" y2="${bottom}" class="chart-gridline"/><text x="34" y="${chartTop + 4}" class="chart-axis-label">${maxLabel}</text><text x="42" y="${bottom + 4}" class="chart-axis-label">0</text>${bars}${hasData ? "" : '<text x="312" y="105" text-anchor="middle" class="chart-empty-label">Aguardando avaliações reais</text>'}</svg>`;
+  }
+
+  function renderSatisfaction() {
+    const feedback = App.Satisfacao.getAll().sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const count = feedback.length;
+    const average = count
+      ? feedback.reduce((sum, item) => sum + item.rating, 0) / count
+      : 0;
+    const positive = count
+      ? Math.round(feedback.filter(item => item.rating >= 4).length / count * 100)
+      : 0;
+    $("#satisfaction-average").textContent = count ? average.toFixed(1).replace(".", ",") : "—";
+    $("#satisfaction-count").textContent = String(count);
+    $("#satisfaction-positive").textContent = count ? `${positive}%` : "—";
+    $("#satisfaction-integration-note").classList.toggle("hidden", count > 0);
+    $("#satisfaction-distribution").innerHTML = [5, 4, 3, 2, 1].map(rating => {
+      const votes = feedback.filter(item => item.rating === rating).length;
+      const width = count ? Math.round(votes / count * 100) : 0;
+      return `<div class="rating-row"><span>${rating} <span aria-hidden="true">★</span></span><div class="rating-track"><span style="width:${width}%"></span></div><strong>${votes}</strong></div>`;
+    }).join("") + (count ? "" : '<p class="chart-empty">As avaliações reais aparecerão após a integração.</p>');
+    const months = satisfactionMonths(feedback);
+    $("#satisfaction-trend").innerHTML = renderRatingTrend(months);
+    $("#satisfaction-volume").innerHTML = renderRatingVolume(months);
+    $("#satisfaction-list").innerHTML = count
+      ? feedback.slice(0, 8).map(item => {
+        const date = new Date(item.createdAt);
+        const dateLabel = Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "Data não informada";
+        return `<article class="feedback-card"><div class="feedback-head"><strong>${App.Utils.escape(item.customerName || "Cliente")}</strong><span class="feedback-rating">${"★".repeat(item.rating)}${"☆".repeat(5 - item.rating)}</span></div><p>${App.Utils.escape(item.comment || "Sem comentário.")}</p><small>${dateLabel} · ${App.Utils.escape(item.source)}</small></article>`;
+      }).join("")
+      : '<div class="empty">Nenhum comentário recebido ainda.</div>';
   }
 
   function openFlavorForm(item = null) {
@@ -522,16 +615,26 @@
     renderKitchen();
     renderAppointments();
     renderSummary();
+    renderSatisfaction();
   }
 
   function switchTab(tab) {
-    const menuSelected = tab === "menu";
-    $("#kitchen-view").classList.toggle("hidden", menuSelected || tab !== "kitchen");
-    $("#all-orders-view").classList.toggle("hidden", menuSelected || tab !== "orders");
-    $("#menu-view").classList.toggle("hidden", !menuSelected);
+    activeTab = tab;
+    $("#kitchen-view").classList.toggle("hidden", tab !== "kitchen");
+    $("#all-orders-view").classList.toggle("hidden", tab !== "massas" && tab !== "buffets");
+    $("#satisfaction-view").classList.toggle("hidden", tab !== "satisfaction");
+    $("#menu-view").classList.toggle("hidden", tab !== "menu");
     $$(".tab").forEach(button => button.classList.toggle("active", button.dataset.tab === tab));
-    if (tab === "orders") renderAppointments();
+    if (tab === "massas" || tab === "buffets") {
+      $("#appointments-heading").textContent = tab === "massas" ? "Agendamentos de massas" : "Agendamentos de buffet";
+      $("#appointments-description").textContent = tab === "massas"
+        ? "Pedidos de massas feitos por pizzarias, ordenados pela data mais próxima."
+        : "Eventos de buffet confirmados, ordenados pela data mais próxima.";
+      $("#search").placeholder = tab === "massas" ? "Buscar pizzaria ou pedido" : "Buscar cliente ou pedido";
+      renderAppointments();
+    }
     if (tab === "kitchen") renderKitchen();
+    if (tab === "satisfaction") renderSatisfaction();
   }
 
   function bindDateMask(input) {
@@ -545,10 +648,6 @@
   function bindEvents() {
     syncProductionDisclosure();
     window.addEventListener("resize", syncProductionDisclosure);
-    $("#new-appointment").addEventListener("click", () => {
-      setAppointmentForm(null, "presencial");
-      $("#appointment-dialog").showModal();
-    });
     $$("[data-close]").forEach(button => button.addEventListener("click", () => {
       $(`#${button.dataset.close}`).close();
     }));
@@ -631,7 +730,7 @@
     ["delivery-fee", "discount", "discount-type", "deposit"].forEach(id => {
       $(`#${id}`).addEventListener("input", updateOrderTotals);
     });
-    ["search", "status-filter", "type-filter", "date-filter", "date-from", "date-to", "sort-orders"].forEach(id => {
+    ["search", "status-filter", "date-filter", "date-from", "date-to", "sort-orders"].forEach(id => {
       $(`#${id}`).addEventListener("input", renderAppointments);
     });
     $("#date-filter").addEventListener("change", () => {

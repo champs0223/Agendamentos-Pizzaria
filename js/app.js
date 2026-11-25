@@ -6,6 +6,7 @@
   App.start = function () {
     App.Cardapio.init();
     App.Agendamentos.init();
+    App.Satisfacao.init();
     App.UI.init();
     App.Utils.$("#summary-date").value = App.Utils.displayDate(App.Utils.todayISO());
     App.UI.renderMenu();

@@ -12,8 +12,8 @@
         return searchable.includes(query) &&
           (!values.type || values.type === "all" || item.type === values.type) &&
           (status === "all" || item.status === status) &&
-          (item.type === "presencial" ? item.orderedAt.slice(0, 10) : item.date) &&
-          this.matchesDate(item.type === "presencial" ? { ...item, date: item.orderedAt.slice(0, 10) } : item, values);
+          item.date &&
+          this.matchesDate(item, values);
       });
     },
     // Verifica se a data do pedido pertence ao período escolhido.

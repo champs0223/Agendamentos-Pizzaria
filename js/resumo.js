@@ -7,7 +7,7 @@
     build(dateISO, appointments, type = "all") {
       const daily = App.Utils.sortAppointments(appointments.filter(item =>
         (type === "all" || item.type === type) &&
-        (item.type === "presencial" ? item.orderedAt.slice(0, 10) : item.date) === dateISO &&
+        item.date === dateISO &&
         item.status !== "Cancelado"
       ));
       const flavors = new Map();
@@ -19,7 +19,7 @@
         date: dateISO,
         deliveries: daily,
         buffetRevenue: daily.filter(item => item.type === "buffet").reduce((sum, item) => sum + (Number(item.total) || 0), 0),
-        presentialRevenue: daily.filter(item => item.type === "presencial").reduce((sum, item) => sum + (Number(item.total) || 0), 0),
+        massasRevenue: daily.filter(item => item.type === "massas").reduce((sum, item) => sum + (Number(item.total) || 0), 0),
         flavors: [...flavors.entries()].map(([key, quantity]) => {
           const [flavor, size] = key.split("|");
           return { flavor, size, quantity };

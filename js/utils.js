@@ -116,13 +116,9 @@
     },
     // Ordena os pedidos por data e horário.
     sortAppointments(list) {
-      return [...list].sort((a, b) => {
-        if (a.type === "presencial" || b.type === "presencial") {
-          if (a.type !== b.type) return a.type === "buffet" ? -1 : 1;
-          return String(a.orderedAt || a.createdAt || "").localeCompare(String(b.orderedAt || b.createdAt || ""));
-        }
-        return `${a.date || ""}T${a.time || ""}`.localeCompare(`${b.date || ""}T${b.time || ""}`);
-      });
+      return [...list].sort((a, b) =>
+        `${a.date || ""}T${a.time || ""}`.localeCompare(`${b.date || ""}T${b.time || ""}`)
+      );
     }
   };
 })(window);

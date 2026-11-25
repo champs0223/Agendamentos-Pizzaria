@@ -47,3 +47,32 @@ dialog::backdrop { background: rgba(35,25,20,.55); }
 .checkbox-label { display: flex; align-items: center; gap: 7px; }
 .checkbox-label input { width: auto; min-height: 0; margin: 0; }
 #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5; max-width: min(600px, calc(100% - 24px)); padding: 12px 18px; border-radius: 10px; background: #29231f; color: #fff; box-shadow: var(--shadow); }
+
+.primary, .secondary, .danger, .small-btn { border-radius: 9px; transition: background .15s ease, transform .15s ease; }
+.primary { background: var(--red); }
+.primary:hover { background: #8f4d28; transform: translateY(-1px); }
+.secondary { background: #f1e9e1; }
+.secondary:hover { background: #e8ddd2; }
+.metric, .panel { border-radius: 13px; box-shadow: var(--shadow); }
+.metric { padding: 17px 19px; }
+.metric strong { margin: 3px 0 0; font-size: 1.65rem; line-height: 1.2; color: var(--dark); font-variant-numeric: tabular-nums; }
+.metric span { font-size: .84rem; }
+.metric .metric-label { display: block; color: #65584f; font-size: .85rem; font-weight: 700; }
+.satisfaction-score strong { color: #a96a30; }
+.panel { margin-bottom: 16px; }
+.panel-title h2, .panel-title h3 { font-size: 1.05rem; }
+.panel-title .muted { margin: 3px 0 0; font-size: .84rem; }
+.appointment { border-left-width: 4px; padding: 17px; }
+.appointment.late { border-left-color: #b94a3f; background: #fff8f6; }
+.card-head h3 { font-size: 1.08rem; }
+.card-date { font-size: .9rem; }
+.badge { font-size: .78rem; }
+.status-agendado { color: #745210; background: #f8edda; }
+.status-em-preparo { background: #e5eff3; }
+.status-saiu-para-entrega { background: #eee8f5; }
+.status-entregue { background: #e4efe5; }
+.status-cancelado { background: #f6e7e4; }
+.empty { padding: 26px 12px; border-color: #d6cbc1; border-radius: 11px; font-size: .9rem; }
+dialog { border-radius: 15px; }
+.money-output { min-height: 44px; background: #f7f3ef; }
+#toast { z-index: 25; background: var(--dark); }
