@@ -2,17 +2,7 @@
 (function (window) {
   const App = window.App = window.App || {};
 
-  // Carrega os dados, prepara os formulários e exibe a tela inicial.
-  App.start = function () {
-    App.Cardapio.init();
-    App.Agendamentos.init();
-    App.Satisfacao.init();
-    App.UI.init();
-    App.Utils.$("#summary-date").value = App.Utils.displayDate(App.Utils.todayISO());
-    App.UI.renderMenu();
-    App.UI.renderPizzaMenu();
-    App.UI.renderAll();
-  };
+  App.start = function () { App.Api.initialize(); };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", App.start, { once: true });

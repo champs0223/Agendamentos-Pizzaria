@@ -215,7 +215,7 @@
     };
   }
 
-  function saveAppointment(event) {
+  async function saveAppointment(event) {
     event.preventDefault();
     const item = collectAppointment();
     const errors = App.Agendamentos.validate(item, $("#delivery-date").value);
@@ -232,7 +232,7 @@
     if (item.type === "buffet" && item.deposit > item.total &&
       !confirm("O sinal informado é maior que o valor total. Deseja salvar mesmo assim?")) return;
     const isEditing = Boolean(editingId);
-    if (!App.Agendamentos.save(item)) return;
+    if (!await App.Agendamentos.save(item)) return;
     $("#appointment-dialog").close();
     renderAll();
     App.Utils.toast(isEditing ? "Pedido atualizado." : "Pedido salvo.");
@@ -265,14 +265,14 @@
     return item.pizzas.map(pizza => `${pizza.quantity}x ${pizza.flavor} ${pizza.size}`).join(", ");
   }
 
-  function advanceStatus(item) {
+  async function advanceStatus(item) {
     const sequence = item.status === "Recebido"
       ? ["Recebido", "Em preparo", "Saiu para entrega", "Entregue"]
       : ["Agendado", "Em preparo", "Saiu para entrega", "Entregue"];
     const currentIndex = sequence.indexOf(item.status);
     if (currentIndex < 0 || currentIndex >= sequence.length - 1) return;
     const next = sequence[currentIndex + 1];
-    if (!App.Agendamentos.changeStatus(item.id, next)) return;
+    if (!await App.Agendamentos.changeStatus(item.id, next)) return;
     if (next === "Entregue") showUndo(item, item.status);
     renderAll();
   }
@@ -287,11 +287,11 @@
     }, 7000);
   }
 
-  function undoDelivery() {
+  async function undoDelivery() {
     if (!undoItem) return;
     const item = App.Agendamentos.find(undoItem.id);
     if (item && item.status === "Entregue") {
-      if (!App.Agendamentos.changeStatus(item.id, undoItem.previousStatus)) return;
+      if (!await App.Agendamentos.changeStatus(item.id, undoItem.previousStatus)) return;
       renderAll();
     }
     undoItem = null;
@@ -451,31 +451,6 @@
     $("#menu-empty").classList.toggle("hidden", menu.length > 0);
   }
 
-  function satisfactionMonths(feedback) {
-    const now = new Date();
-    const months = Array.from({ length: 6 }, (_, index) =>
-      new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
-    ).map(date => ({
-      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-      label: date.toLocaleDateString("pt-BR", { month: "short" }),
-      count: 0,
-      total: 0
-    }));
-    const byKey = new Map(months.map(month => [month.key, month]));
-    feedback.forEach(item => {
-      const date = new Date(item.createdAt);
-      if (!Number.isFinite(date.getTime())) return;
-      const month = byKey.get(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
-      if (!month) return;
-      month.count += 1;
-      month.total += item.rating;
-    });
-    return months.map(month => ({
-      ...month,
-      average: month.count ? month.total / month.count : null
-    }));
-  }
-
   function renderRatingTrend(months) {
     const left = 54;
     const top = 22;
@@ -529,26 +504,26 @@
     const feedback = App.Satisfacao.getAll().sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-    const count = feedback.length;
-    const average = count
-      ? feedback.reduce((sum, item) => sum + item.rating, 0) / count
-      : 0;
-    const positive = count
-      ? Math.round(feedback.filter(item => item.rating >= 4).length / count * 100)
-      : 0;
-    $("#satisfaction-average").textContent = count ? average.toFixed(1).replace(".", ",") : "—";
+    const summary = App.Satisfacao.getSummary();
+    const count = summary.count;
+    $("#satisfaction-average").textContent = summary.average == null ? "—" : summary.average.toFixed(1).replace(".", ",");
     $("#satisfaction-count").textContent = String(count);
-    $("#satisfaction-positive").textContent = count ? `${positive}%` : "—";
+    $("#satisfaction-positive").textContent = summary.positivePercent == null ? "—" : `${summary.positivePercent}%`;
     $("#satisfaction-integration-note").classList.toggle("hidden", count > 0);
     $("#satisfaction-distribution").innerHTML = [5, 4, 3, 2, 1].map(rating => {
-      const votes = feedback.filter(item => item.rating === rating).length;
+      const votes = Number(summary.distribution.find(item => Number(item.rating) === rating)?.count) || 0;
       const width = count ? Math.round(votes / count * 100) : 0;
       return `<div class="rating-row"><span>${rating} <span aria-hidden="true">★</span></span><div class="rating-track"><span style="width:${width}%"></span></div><strong>${votes}</strong></div>`;
     }).join("") + (count ? "" : '<p class="chart-empty">As avaliações reais aparecerão após a integração.</p>');
-    const months = satisfactionMonths(feedback);
+    const months = summary.monthly.map(month => ({
+      key: month.month,
+      label: new Date(`${month.month}-01T12:00:00`).toLocaleDateString("pt-BR", { month: "short" }),
+      count: Number(month.count) || 0,
+      average: month.average == null ? null : Number(month.average)
+    }));
     $("#satisfaction-trend").innerHTML = renderRatingTrend(months);
     $("#satisfaction-volume").innerHTML = renderRatingVolume(months);
-    $("#satisfaction-list").innerHTML = count
+    $("#satisfaction-list").innerHTML = feedback.length
       ? feedback.slice(0, 8).map(item => {
         const date = new Date(item.createdAt);
         const dateLabel = Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "Data não informada";
@@ -571,7 +546,7 @@
     $("#flavor-dialog").showModal();
   }
 
-  function saveFlavor(event) {
+  async function saveFlavor(event) {
     event.preventDefault();
     const name = $("#flavor-name").value.trim();
     if (!name) {
@@ -589,17 +564,17 @@
       },
       available: $("#flavor-available").checked
     };
-    if (!App.Cardapio.save(item)) return;
+    if (!await App.Cardapio.save(item)) return;
     $("#flavor-dialog").close();
     renderMenu();
     renderPizzaMenu();
     App.Utils.toast("Sabor salvo.");
   }
 
-  function deleteAppointment(id) {
+  async function deleteAppointment(id) {
     const item = App.Agendamentos.find(id);
     if (!item || !confirm(`Excluir o pedido de ${item.name}? Esta ação não pode ser desfeita.`)) return;
-    if (!App.Agendamentos.remove(id)) return;
+    if (!await App.Agendamentos.remove(id)) return;
     renderAll();
     App.Utils.toast("Pedido excluído.");
   }
@@ -743,40 +718,40 @@
     $("#summary-type").addEventListener("change", renderSummary);
     $("#undo-delivery").addEventListener("click", undoDelivery);
     ["today-orders", "today-buffets"].forEach(id => {
-      $(`#${id}`).addEventListener("click", event => {
+      $(`#${id}`).addEventListener("click", async event => {
         const button = event.target.closest("[data-advance]");
         if (!button) return;
         const item = App.Agendamentos.find(button.dataset.advance);
-        if (item) advanceStatus(item);
+        if (item) await advanceStatus(item);
       });
     });
-    $("#appointment-list").addEventListener("click", event => {
+    $("#appointment-list").addEventListener("click", async event => {
       const edit = event.target.closest("[data-edit]");
       const remove = event.target.closest("[data-delete]");
       const print = event.target.closest("[data-print]");
       if (edit) editAppointment(edit.dataset.edit);
-      if (remove) deleteAppointment(remove.dataset.delete);
+      if (remove) await deleteAppointment(remove.dataset.delete);
       if (print) App.Comanda.print(App.Agendamentos.find(print.dataset.print));
     });
-    $("#appointment-list").addEventListener("change", event => {
+    $("#appointment-list").addEventListener("change", async event => {
       if (event.target.matches("[data-status-id]")) {
-        if (!App.Agendamentos.changeStatus(event.target.dataset.statusId, event.target.value)) return;
+        if (!await App.Agendamentos.changeStatus(event.target.dataset.statusId, event.target.value)) return;
         renderAll();
         App.Utils.toast("Status atualizado.");
       }
     });
-    $("#appointment-list").addEventListener("click", event => {
+    $("#appointment-list").addEventListener("click", async event => {
       const advance = event.target.closest("[data-advance]");
       if (!advance) return;
       const item = App.Agendamentos.find(advance.dataset.advance);
-      if (item) advanceStatus(item);
+      if (item) await advanceStatus(item);
     });
-    $("#menu-list").addEventListener("click", event => {
+    $("#menu-list").addEventListener("click", async event => {
       const edit = event.target.closest("[data-menu-edit]");
       const toggle = event.target.closest("[data-menu-toggle]");
       const remove = event.target.closest("[data-menu-delete]");
       if (edit) openFlavorForm(App.Cardapio.find(edit.dataset.menuEdit));
-      if (toggle && App.Cardapio.toggle(toggle.dataset.menuToggle)) {
+      if (toggle && await App.Cardapio.toggle(toggle.dataset.menuToggle)) {
         renderMenu();
         renderPizzaMenu();
         App.Utils.toast("Disponibilidade atualizada.");
@@ -784,7 +759,7 @@
       if (remove) {
         const item = App.Cardapio.find(remove.dataset.menuDelete);
         if (item && confirm(`Excluir o sabor ${item.name} do cardápio? Pedidos existentes não serão alterados.`) &&
-          App.Cardapio.remove(item.id)) {
+          await App.Cardapio.remove(item.id)) {
           renderMenu();
           renderPizzaMenu();
           App.Utils.toast("Sabor excluído do cardápio.");
@@ -792,9 +767,9 @@
       }
     });
     $("#new-flavor").addEventListener("click", () => openFlavorForm());
-    $("#restore-menu").addEventListener("click", () => {
+    $("#restore-menu").addEventListener("click", async () => {
       if (!confirm("Restaurar o cardápio inicial? Os sabores atuais serão substituídos.")) return;
-      if (App.Cardapio.restore()) {
+      if (await App.Cardapio.restore()) {
         renderMenu();
         renderPizzaMenu();
         App.Utils.toast("Cardápio inicial restaurado.");

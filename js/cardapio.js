@@ -30,15 +30,10 @@
 
   App.Cardapio = {
     normalize,
-    // Carrega o cardápio salvo ou cria a lista inicial.
-    init() {
-      const saved = App.Storage.read(App.Storage.keys.menu, null);
-      if (Array.isArray(saved)) {
-        items = saved.filter(item => item && item.id && item.prices).map(normalize);
-      } else {
-        items = this.initial();
-        App.Storage.write(App.Storage.keys.menu, items);
-      }
+    init(saved = []) {
+      items = Array.isArray(saved)
+        ? saved.filter(item => item && item.id && item.prices).map(normalize)
+        : [];
     },
     // Cria os itens padrão com identificadores novos.
     initial() {
@@ -53,56 +48,32 @@
     // Localiza um sabor pelo identificador.
     find(id) { return items.find(item => item.id === id); },
     // Substitui todo o cardápio, por exemplo, durante a importação.
-    replace(nextItems) {
-      const previous = items;
-      items = nextItems.map(normalize);
-      if (!App.Storage.write(App.Storage.keys.menu, items)) {
-        items = previous;
+    async replace(nextItems) {
+      const next = nextItems.map(normalize);
+      try {
+        await App.Api.saveMenu(next);
+        items = next;
+      } catch (error) {
+        App.Utils.toast(`Não foi possível salvar o cardápio: ${error.message}`);
         return false;
       }
       return true;
     },
     // Insere ou atualiza um sabor.
-    save(item) {
-      const old = items;
-      items = items.some(entry => entry.id === item.id)
+    async save(item) {
+      const next = items.some(entry => entry.id === item.id)
         ? items.map(entry => entry.id === item.id ? item : entry)
         : [...items, item];
-      if (!App.Storage.write(App.Storage.keys.menu, items)) {
-        items = old;
-        return false;
-      }
-      return true;
+      return this.replace(next);
     },
-    // Alterna a disponibilidade de um sabor.
-    toggle(id) {
-      const old = items;
-      items = items.map(item => item.id === id ? { ...item, available: !item.available } : item);
-      if (!App.Storage.write(App.Storage.keys.menu, items)) {
-        items = old;
-        return false;
-      }
-      return true;
+    async toggle(id) {
+      return this.replace(items.map(item => item.id === id ? { ...item, available: !item.available } : item));
     },
-    // Remove um sabor do cardápio.
-    remove(id) {
-      const old = items;
-      items = items.filter(item => item.id !== id);
-      if (!App.Storage.write(App.Storage.keys.menu, items)) {
-        items = old;
-        return false;
-      }
-      return true;
+    async remove(id) {
+      return this.replace(items.filter(item => item.id !== id));
     },
-    // Restaura a lista inicial de sabores.
-    restore() {
-      const old = items;
-      items = this.initial();
-      if (!App.Storage.write(App.Storage.keys.menu, items)) {
-        items = old;
-        return false;
-      }
-      return true;
+    async restore() {
+      return this.replace(this.initial());
     }
   };
 })(window);

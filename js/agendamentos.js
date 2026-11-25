@@ -34,41 +34,15 @@
   App.Agendamentos = {
     statuses: STATUSES,
     normalize,
-    // Carrega os pedidos persistidos no navegador.
-    init() {
-      const saved = App.Storage.read(App.Storage.keys.appointments, []);
+    init(saved = []) {
       items = Array.isArray(saved)
         ? saved.filter(item => item && item.id && Array.isArray(item.pizzas)).map(normalize)
         : [];
-      let changed = Array.isArray(saved) && saved.some(item => item && (!item.type || item.type === "presencial"));
-      const dailyNumbers = new Map();
-      items = items.map(item => {
-        if (item.type !== "massas" || item.orderNumber) return item;
-        const day = item.orderedAt.slice(0, 10) || App.Utils.todayISO();
-        const existingMax = items.filter(other =>
-          other.type === "massas" && other.orderedAt.slice(0, 10) === day
-        ).reduce((max, other) => Math.max(max, Number(other.orderNumber) || 0), 0);
-        const number = Math.max(existingMax, dailyNumbers.get(day) || 0) + 1;
-        dailyNumbers.set(day, number);
-        changed = true;
-        return { ...item, orderNumber: number };
-      });
-      if (changed) App.Storage.write(App.Storage.keys.appointments, items);
     },
     // Retorna uma cópia dos pedidos atuais.
     getAll() { return [...items]; },
     // Localiza um pedido pelo identificador.
     find(id) { return items.find(item => item.id === id); },
-    // Substitui os pedidos existentes por uma lista importada.
-    replace(nextItems) {
-      const previous = items;
-      items = nextItems.map(normalize);
-      if (!App.Storage.write(App.Storage.keys.appointments, items)) {
-        items = previous;
-        return false;
-      }
-      return true;
-    },
     // Calcula subtotal, desconto e total final do pedido.
     calculate(pizzas, fee, discountType, discountValue) {
       const subtotal = pizzas.reduce((sum, pizza) => sum + App.Utils.itemTotal(pizza), 0);
@@ -79,34 +53,49 @@
       return { subtotal, discount, total: Math.max(0, subtotal + (Number(fee) || 0) - discount) };
     },
     // Cria ou atualiza um pedido e persiste os dados.
-    save(item) {
+    async save(item) {
       const previous = items;
-      items = item.id && items.some(entry => entry.id === item.id)
+      const next = item.id && items.some(entry => entry.id === item.id)
         ? items.map(entry => entry.id === item.id ? item : entry)
         : [...items, item];
-      if (!App.Storage.write(App.Storage.keys.appointments, items)) {
+      try {
+        const saved = await App.Api.saveAppointment(item);
+        items = next.map(entry => entry.id === item.id
+          ? { ...entry, orderNumber: Number(saved.orderNumber) || 0 }
+          : entry);
+      } catch (error) {
         items = previous;
+        App.Utils.toast(`Não foi possível salvar o agendamento: ${error.message}`);
         return false;
       }
       return true;
     },
     // Exclui um pedido e persiste a lista.
-    remove(id) {
+    async remove(id) {
       const previous = items;
-      items = items.filter(item => item.id !== id);
-      if (!App.Storage.write(App.Storage.keys.appointments, items)) {
+      try {
+        await App.Api.deleteAppointment(id);
+        items = items.filter(item => item.id !== id);
+      } catch (error) {
         items = previous;
+        App.Utils.toast(`Não foi possível excluir o agendamento: ${error.message}`);
         return false;
       }
       return true;
     },
     // Atualiza o status do pedido selecionado.
-    changeStatus(id, status) {
+    async changeStatus(id, status) {
       if (!STATUSES.includes(status)) return false;
       const previous = items;
-      items = items.map(item => item.id === id ? { ...item, status } : item);
-      if (!App.Storage.write(App.Storage.keys.appointments, items)) {
+      try {
+        await App.Api.request(`/admin/agendamentos/${encodeURIComponent(id)}/status`, {
+          method: "PATCH",
+          body: { status }
+        });
+        items = items.map(item => item.id === id ? { ...item, status } : item);
+      } catch (error) {
         items = previous;
+        App.Utils.toast(`Não foi possível atualizar o status: ${error.message}`);
         return false;
       }
       return true;

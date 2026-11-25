@@ -21,6 +21,11 @@ textarea { min-height: 86px; resize: vertical; }
 label { display: block; font-weight: 650; font-size: .87rem; margin-bottom: 6px; color: #574c44; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { font-size: 1.2rem; line-height: 1.2; margin: 0; }
+.connection-view { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 24px; }
+.connection-card { width: min(440px, 100%); padding: 28px; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); box-shadow: var(--shadow); }
+.connection-card h2 { margin-bottom: 8px; }
+.connection-card form { margin-top: 20px; }
+.connection-card form button, #connection-retry { width: 100%; margin-top: 8px; }
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
 .field-error { color: #b42318; font-size: .82rem; min-height: 1.15em; display: block; }

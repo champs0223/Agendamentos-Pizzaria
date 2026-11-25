@@ -13,11 +13,25 @@
 <body>
   <header class="topbar">
     <div class="brand"><div class="brand-icon" aria-hidden="true">M</div><div><h1>Mascavo Pizzas</h1><small>Painel de operação</small></div></div>
-    <div class="topbar-note"><span class="online-dot" aria-hidden="true"></span> Gestão de pedidos</div>
+    <div class="topbar-note"><span class="online-dot" aria-hidden="true"></span> Gestão de pedidos <button id="admin-logout" class="secondary small-btn hidden" type="button">Sair</button></div>
   </header>
-  <main>
+  <section id="connection-view" class="connection-view" aria-live="polite">
+    <article class="connection-card">
+      <p class="eyebrow">MASCAVO PIZZAS</p>
+      <h2 id="connection-title">Conectando ao banco de dados</h2>
+      <p id="connection-message" class="muted">Aguarde enquanto verifico a API local.</p>
+      <form id="admin-login" class="hidden">
+        <label for="admin-token">Token administrativo</label>
+        <input id="admin-token" type="password" autocomplete="current-password" required>
+        <p id="login-error" class="field-error" role="alert"></p>
+        <button class="primary" type="submit">Entrar no painel</button>
+      </form>
+      <button id="connection-retry" class="secondary hidden" type="button">Tentar novamente</button>
+    </article>
+  </section>
+  <main id="application" class="hidden">
     <section class="page-intro">
-      <div><p class="eyebrow">CENTRAL DE OPERAÇÕES</p><h2>Organize sua produção</h2><p>Acompanhe massas para pizzarias, buffets e a experiência dos clientes. Novos pedidos chegarão pelo chatbot após a integração.</p></div>
+      <div><p class="eyebrow">CENTRAL DE OPERAÇÕES</p><h2>Organize sua produção</h2><p>Acompanhe massas para pizzarias, buffets e a experiência dos clientes. Os bots podem enviar pedidos e avaliações pela API.</p></div>
     </section>
     <nav class="tabs" aria-label="Seções">
       <button class="tab active" data-tab="kitchen" type="button"><span aria-hidden="true">▦</span> Visão geral</button>
@@ -57,7 +71,7 @@
       <section class="panel"><div class="panel-title"><h2>Agendamentos encontrados</h2></div><div id="appointment-list" class="appointment-list"></div></section>
     </section>
     <section id="satisfaction-view" class="hidden">
-      <div class="section-heading"><div><h2>Satisfação dos clientes</h2><p class="muted">Acompanhe as avaliações recebidas após os pedidos.</p></div><span class="integration-status"><span class="online-dot" aria-hidden="true"></span> Estrutura preparada</span></div>
+      <div class="section-heading"><div><h2>Satisfação dos clientes</h2><p class="muted">Acompanhe as avaliações recebidas após os pedidos.</p></div><span class="integration-status"><span class="online-dot" aria-hidden="true"></span> PostgreSQL conectado</span></div>
       <section class="satisfaction-metrics" aria-label="Indicadores de satisfação">
         <article class="metric satisfaction-score"><span class="metric-label">Nota média</span><strong id="satisfaction-average">—</strong><span>de 5 pontos</span></article>
         <article class="metric"><span class="metric-label">Avaliações recebidas</span><strong id="satisfaction-count">0</strong><span>respostas registradas</span></article>
@@ -69,7 +83,7 @@
         <section class="panel chart-panel"><div class="panel-title"><div><h2>Volume de avaliações</h2><p class="muted">Respostas recebidas nos últimos seis meses.</p></div></div><div id="satisfaction-volume" class="bar-chart"></div></section>
       </div>
       <section class="panel"><div class="panel-title"><div><h2>Comentários recentes</h2><p class="muted">Feedbacks vinculados aos pedidos.</p></div></div><div id="satisfaction-list" class="feedback-list"></div></section>
-      <aside id="satisfaction-integration-note" class="integration-note"><strong>Integração ainda não conectada</strong><p>Quando o chatbot estiver pronto, os feedbacks poderão ser enviados por uma API segura e aparecerão aqui. Nenhuma avaliação de exemplo está sendo exibida.</p></aside>
+      <aside id="satisfaction-integration-note" class="integration-note"><strong>Aguardando avaliações do chatbot</strong><p>A API está pronta para receber avaliações; os gráficos e comentários aparecerão assim que o chatbot enviar os primeiros dados.</p></aside>
     </section>
     <section id="menu-view" class="hidden">
       <section class="toolbar"><div><h2>Cardápio</h2><p class="muted">Gerencie sabores, categorias, preços e disponibilidade.</p></div><div><button class="secondary" id="restore-menu" type="button">Restaurar cardápio inicial</button> <button class="primary" id="new-flavor" type="button">＋ Adicionar sabor</button></div></section>
@@ -118,6 +132,7 @@
   <script defer src="js/cardapio.js"></script>
   <script defer src="js/satisfacao.js"></script>
   <script defer src="js/agendamentos.js"></script>
+  <script defer src="js/api.js"></script>
   <script defer src="js/filtros.js"></script>
   <script defer src="js/resumo.js"></script>
   <script defer src="js/comanda.js"></script>
